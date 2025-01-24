@@ -1,0 +1,59 @@
+.TH L1LIGHT 1 2024-01-25
+.SH NAME
+l1light \- set device brightness using \fBlogin1\fR interface
+.SH SYNOPSIS
+.nf
+\fBl1light\fR [\fB\-t\fR \fIsubsys\fR\fB/\fR\fIdevice\fR] \
+[\fB\-rlhV\fR] [[\fB+\fR|\fB\-\fR]\fIval\fR|\fBtoggle\fR]
+.fi
+.SH DESCRIPTION
+\fBl1light\fR sets the brightness on a device to the integer percentage argument
+using \fBorg.freedesktop.login1\fR(5).
+The brightness percentage is printed when there is no argument specified.
+.PP
+If the argument starts with \fB+\fR or \fB\-\fR, the brightness value is added
+with the specified percentage. If \fBtoggle\fR is specified, the brightness is
+set to 0 or 1.
+.PP
+\fBl1light\fR is mainly used to set screen brightness in GUI sessions in cases
+where it cannot be done as a regular user without modifying other configuration.
+.SH OPTIONS
+.TP
+\fB\-t\fR \fIsubsys\fR\fB/\fR\fIdevice\fR
+Set or print brightness on \fIdevice\fR in \fIsubsys\fR. If \fIdevice\fR is
+specified as \fBauto\fR, a device assigned to the seat where \fBl1light\fR is
+run will be used (see \fBsd-login\fR(3)).
+The default value is \fBbacklight/auto\fR.
+.TP
+\fB\-r\fR
+Set or print raw value.
+.TP
+\fB\-l\fR
+Print available target devices.
+.TP
+\fB\-V\fR
+Print version.
+.TP
+\fB\-h\fR
+Print help.
+.SH ENVIRONMENT
+.TP
+.I XDG_SEAT
+Seat where device is detected if not specified.
+.TP
+.I XDG_SESSION_ID
+Session where brightness is set.
+.SH FILES
+.TP
+.I /sys/class/*/*/backlight
+Device brightness value.
+.TP
+.I /sys/class/*/*/max_backlight
+Maximum brightness value.
+.SH EXIT STATUS
+The exit status is 0 when no error has occured.
+.SH SEE ALSO
+.BR dbus-send (1),
+.BR sd-login (3),
+.BR org.freedesktop.login1 (5),
+.BR udevadm (8)
