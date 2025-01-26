@@ -121,7 +121,7 @@ toggle)
 *)
     [ $raw = 1 ] && val=$1 || val=$(
         awk -v val=$1 'BEGIN {getline max; print int(max / 100 * val)}' \
-            "$path/max_brightness" \
+            "$path/max_brightness"
     );;
 esac
 
