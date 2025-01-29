@@ -77,7 +77,8 @@ if [ "$devname" = auto ]; then
 
     path=
     for path in "/sys/class/$subsys"/*; do
-        props=`udevadm info -q property "$path" && echo .`
+        props=`udevadm info -q property "$path" && echo .` ||
+            reterr $? "cannot retrieve device properties"
         devseat=`printf %s "${props%.}" | sed -n 's/^ID_SEAT=\(.*\)/\1/p' || :`
         [ "${devseat:-seat0}" = "$XDG_SEAT" ] && break
         path=
@@ -89,14 +90,19 @@ else
     path=/sys/class/$subsys/$devname
 fi
 
+valpath=$path/brightness
+maxpath=$path/max_brightness
+
 if [ -z "${1+.}" ]; then
     if [ $raw = 1 ]; then
-        exec cat "$path/brightness"
+        cat "$valpath" || reterr $? "cannot print raw value"
     else
         setp='getline val; getline max; p = val/max * 100'
-        exec awk "BEGIN {$setp; print int(p) + !!(p%1)}" \
-            "$path/brightness" "$path/max_brightness"
+        printp='print int(p) + !!(p%1)'
+        awk "BEGIN {$setp; $printp}" "$valpath" "$maxpath" ||
+            reterr $? "cannot print percentage"
     fi
+    exit
 fi
 
 [ "$1" != toggle ] && case ${1#[+-]} in
@@ -105,27 +111,29 @@ esac
 
 case $1 in
 toggle)
-    val=`cat "$path/brightness"`
+    val=`cat "$valpath"` || reterr $? "cannot toggle value"
     [ "$val" -gt 0 ] && val=0 || val=1;;
 [+-]*)
     if [ $raw = 1 ]; then
-        orig=`cat "$path/brightness"`
+        orig=`cat "$valpath"` || reterr $? "cannot add raw value"
         val=$((orig + $1))
     else
         setp='getline orig; getline max; p = orig/max * 100'
         setv="$setp; v = int(max/100 * (int(p) + !!(p%1) + val))"
-        vexpr='v < 0 ? 0 : (v > max ? max : v)'
-        val=$(awk -v val=$1 "BEGIN {$setv; print $vexpr}" \
-            "$path/brightness" "$path/max_brightness")
+        printv='print v < 0 ? 0 : (v > max ? max : v)'
+        val=`awk -v val=$1 "BEGIN {$setv; $printv}" "$valpath" "$maxpath"` ||
+            reterr $? "cannot add percentage"
     fi;;
 *)
-    [ $raw = 1 ] && val=$1 || val=$(
-        awk -v val=$1 'BEGIN {getline max; print int(max / 100 * val)}' \
-            "$path/max_brightness"
-    );;
+    aprog='BEGIN {getline max; print int(max / 100 * val)}'
+    [ $raw = 1 ] && val=$1 || val=`awk -v val=$1 "$aprog" "$maxpath"` ||
+        reterr $? "cannot convert percentage";;
 esac
 
-exec dbus-send --system --print-reply=literal --dest=org.freedesktop.login1 \
+dbus-send --system --print-reply=literal --dest=org.freedesktop.login1 \
     "/org/freedesktop/login1/session/$XDG_SESSION_ID" \
     org.freedesktop.login1.Session.SetBrightness \
-    string:"$subsys" string:"$devname" uint32:"$val"
+    string:"$subsys" string:"$devname" uint32:"$val" ||
+{
+    reterr $? "cannot set value"
+}
