@@ -37,7 +37,7 @@ while getopts t:rlhV0123456789 opt; do
     r) raw=1;;
     l) act=list;;
     h) proghelp; exit;;
-    V) echo "l1light v1.0.0"; exit;;
+    V) echo "l1light v1.1.0"; exit;;
     [0-9]) OPTIND=$((OPTIND - 1)) break;;
     *) usage; exit 1;;
     esac
