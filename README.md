@@ -15,6 +15,10 @@ The programs written below are used but they are usually installed:
 - `dbus-send` - setting brightness
 - `udevadm` - used with detecting device when not specified
 
+## Standards
+
+POSIX 2017 is adhered in source code.
+
 ## Similar programs
 
 - [RPigott/blight](https://github.com/RPigott/blight)
